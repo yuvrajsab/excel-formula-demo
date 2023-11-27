@@ -6,31 +6,86 @@ const formula = require('excel-formula');
 const esprima = require('esprima');
 
 const filePath = './sample formula - product final.csv';
+const outputFilePath = './result.json';
 const content = fs.readFileSync(filePath);
 
 const records = parse(content, {
     delimiter: ',',
-    encoding: 'utf8'
+    encoding: 'utf8',
+    from: 3,
+    columns: [
+        'City',
+        'State',
+        'City Redirected',
+        'State Redirected',
+        'Ex showroom Price',
+        'GST',
+        'Compensation Cess',
+        'Ex showroom before taxes',
+        'Engine Capacity',
+        'Fuel Type',
+        'Seating Capacity',
+        'Car Length (mm)',
+        'Road Tax',
+        'TCS',
+        'Life Tax',
+        'Statutory Fees',
+        'Reg Charges',
+        'Green Tax',
+        'Road Safety Tax',
+        'Cow Cess',
+        'Total Tax',
+        'Insurance',
+        'On Road Price',
+        'blank1',
+        'Road Tax formula',
+        'TCS formula',
+        'Life Tax formula',
+        'Statutory Fees formula',
+        'Reg Charges formula',
+        'Green Tax formula',
+        'Road Safety Tax formula',
+        'Cow Cess formula',
+        'Total Tax formula',
+        'Insurance formula',
+        'On Road Price formula',
+        'blank2',
+        'blank3'
+    ]
 });
 
+
+const formulaCols = [
+    'Road Tax formula',
+    'TCS formula',
+    'Life Tax formula',
+    'Statutory Fees formula',
+    'Reg Charges formula',
+    'Green Tax formula',
+    'Road Safety Tax formula',
+    'Cow Cess formula',
+    'Total Tax formula',
+    'Insurance formula',
+    'On Road Price formula'
+];
+
+
+
 for (let i = 0; i < records.length; i++) {
-    if (i < 2) {
-        // header rows
-        continue;
+    for (const formulaCol of formulaCols) {
+        const formulaString = records[i][formulaCol];
+        const jsCode = formula.toJavaScript(formulaString);
+        // console.log('index', i, 'col', formulaCol, 'jscode', jscode);
+        records[i][formulaCol] = jsCode;
+
+        try {
+            // validate js
+            const script = esprima.parseScript(jsCode);
+        } catch (e) {
+            records[i][formulaCol] = '';
+            console.log(`Error column: ${formulaCol} in formula: ${formulaString} ${e.message}`);
+        }
     }
-
-    const jscode = formula.toJavaScript(records[i][24]);
-
-    try {
-        // validate js
-        const script = esprima.parseScript(jscode);
-
-        console.log('jscode', jscode);
-    } catch (e) {
-        console.log(`Error in jscode: ${e}`);
-    }
-
-    // if (i == 10) {
-    //     break;
-    // }
 }
+
+fs.writeFileSync(outputFilePath, JSON.stringify(records, null, 2));
